@@ -1,0 +1,8 @@
+# ninja log v5
+0	418	1691113208087568065	CMakeFiles/TestTriangulation.dir/Users/archy/CLionProjects/LinearInterpolation/src/Triangulation.cpp.o	de68613e5dca137a
+1	452	1691113208122591192	googletest/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o	eabe54f0f9c76b7
+0	502	1691113208171778799	CMakeFiles/TestTriangulation.dir/TestTriangulation.cpp.o	c742665b9b54d650
+1	1791	1691113209456509060	googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o	c856b7c144e67896
+1791	1835	1691113209507854000	lib/libgtest.a	39900c68662c249
+1835	1847	1691113209520328000	lib/libgtest_main.a	54be1f67112d1e48
+1847	1898	1691113209570316943	TestTriangulation	82a86c97c4660d6d
