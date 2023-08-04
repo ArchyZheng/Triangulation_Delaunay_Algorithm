@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <fstream>
 
 struct XYZ {
     double x, y, z;
@@ -19,9 +20,12 @@ enum StateOfPoint {
 
 StateOfPoint isInsideTheTriangle(XYZ point, std::vector<XYZ> triangle);
 
+void readFromBinaryFile(const std::string& fileStream, std::vector<double> *storedVector);
+
 class Triangulation {
 public:
     Triangulation(std::vector<double> samplePointX, std::vector<double> samplePointY, std::vector<double> samplePointZ);
+
 
 private:
     std::vector<XYZ> _samplePoints;

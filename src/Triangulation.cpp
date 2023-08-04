@@ -7,6 +7,8 @@
 
 /*
  * In construction function, it will generate a super triangle which involve every samplePoint.
+ * The super triangle had been set by the previous knowledge which the location
+ * of every sample point is [(-10, 10), (-10, 10)]
  *
  * @parameters:samplePointX the original point as the vertex of drawn triangle.
  * @parameters:samplePointY
@@ -20,27 +22,28 @@ Triangulation::Triangulation(std::vector<double> samplePointX, std::vector<doubl
     }
 
     // find a triangle which containing all points, 'super triangle'
-    // we need three points,
-    // 1. the left most point, this point comes from samplePoint 2. right most and top 3.right and button.
-    // last two point is created by hands.
-    auto leftMostPoint = std::min_element(samplePointX.begin(), samplePointX.end());
-    auto leftMostPointIndex = std::distance(samplePointX.begin(), leftMostPoint);
-    XYZ point1 = {samplePointX[leftMostPointIndex], samplePointY[leftMostPointIndex], samplePointZ[leftMostPointIndex]};
+    // we need three points, 1. (-30, -10) 2. (30, -10) 3. (0, 30)
+    // adjust some location for getting each sample point inside the super triangle
+    XYZ point1 = {-30 - 30, -10 - 10, 0};
+    XYZ point2 = {30 + 30, -10 - 10, 0};
+    XYZ point3 = {0, 30 + 30, 0};
 
-    auto rightMostPoint = std::max_element(samplePointX.begin(), samplePointX.end());
-    auto rightMostPointIndex = std::distance(samplePointX.begin(), rightMostPoint);
-
-    // add 100 as bias, this will make the line between point1 and point2 will not pass any sample point.
-    double rightAdjust = samplePointX[rightMostPointIndex] + 100;
-
-    XYZ point2 = {rightAdjust, INFINITY, 0};
-    XYZ point3 = {rightAdjust, -INFINITY, 0};
     std::vector<XYZ> superTriangle = {point1, point2, point3};
     this->_triangleCandidate.insert(std::pair<std::string, std::vector<XYZ>>("SuperTriangle", superTriangle));
-
     // repeat: select one point look for triangle whose circumcircle contain this point
     // break those triangles and connect its edges to our point to make a new set of triangles.
-
+    for (auto samplePoint: this->_samplePoints) {
+       std::map<std::string, std::vector<XYZ>> pointOnTheCircle; // the map will store triangles on which the point
+        std::map<std::string, std::vector<XYZ>> pointInsideTheCircle; // the map will store triangles inside which the point
+        for (const auto &triangle: this->_triangleCandidate) {
+            StateOfPoint pointState = isInsideTheTriangle(samplePoint, triangle.second);
+            if (pointState == StateOfPoint::onTheCircle) {
+                pointOnTheCircle.insert(triangle);
+            } else if (pointState == StateOfPoint::inside) {
+                pointInsideTheCircle.insert(triangle);
+            }
+        }
+    }
     // delete all super-triangle vertices
 }
 
@@ -64,7 +67,7 @@ StateOfPoint isInsideTheTriangle(XYZ point, std::vector<XYZ> triangle) {
 
     // the way of getting center location. ref: https://github.com/obviousjim/ofxDelaunay/blob/master/libs/Delaunay/src/Delaunay.cpp
     double centerX = -1 * (middleAB[0] * slopeABMidperpendicular - middleAC[0] * slopeACMidperpendicular + middleAC[1] -
-                      middleAB[1]) / (slopeABMidperpendicular - slopeACMidperpendicular);
+                           middleAB[1]) / (slopeABMidperpendicular - slopeACMidperpendicular);
     double centerY = -1 * (slopeABMidperpendicular * (centerX - middleAB[0]) + middleAB[1]);
 
     double centerCircle[] = {centerX, centerY};
@@ -81,4 +84,23 @@ StateOfPoint isInsideTheTriangle(XYZ point, std::vector<XYZ> triangle) {
     if (redius < distanceBetweenCenterAndSample)
         return StateOfPoint::outside;
     return StateOfPoint::onTheCircle;
+}
+/*
+ * read data from binary file, and restore it into vector outside.
+ * read the data as double!
+ *
+ * @parameter filePath
+ * @parameter storeVector
+ */
+void readFromBinaryFile(const std::string& filePath, std::vector<double> *storedVector) {
+    std::ifstream fileStream(filePath, std::ios::binary);
+    if (!fileStream.is_open()) {
+        return;
+    }
+    fileStream.seekg(0, std::ios::end);
+    auto fileSize = fileStream.tellg();
+    fileStream.seekg(0, std::ios::beg);
+
+    storedVector->resize(fileSize / sizeof(double));
+    fileStream.read(reinterpret_cast<char *>(storedVector->data()), fileSize);
 }
