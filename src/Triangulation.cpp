@@ -3,7 +3,6 @@
 //
 
 #include "Triangulation.h"
-#include "iostream"
 #include "cmath"
 
 /*
@@ -43,4 +42,43 @@ Triangulation::Triangulation(std::vector<double> samplePointX, std::vector<doubl
     // break those triangles and connect its edges to our point to make a new set of triangles.
 
     // delete all super-triangle vertices
+}
+
+/*
+ *  estimate the sample point is inside, outside or on the circumcircle.
+ *  getting the circumcircle center, and compare the distance between sample point and center.
+ *  @parameter point: sample point
+ *  @parameter triangle:
+ */
+StateOfPoint isInsideTheTriangle(XYZ point, std::vector<XYZ> triangle) {
+    assert(triangle.size() == 3);
+    const double EPSILON = 0.000001;
+
+    double middleAB[] = {(triangle[0].x - triangle[1].x) / 2, (triangle[0].y - triangle[1].y) / 2};
+    double middleAC[] = {(triangle[0].x - triangle[2].x) / 2, (triangle[0].y - triangle[2].y) / 2};
+    // get the center of circumcircle.
+    double slopeAB = (triangle[0].y - triangle[1].y) / (triangle[0].x - triangle[1].x + EPSILON);
+    double slopeAC = (triangle[0].y - triangle[2].y) / (triangle[0].x - triangle[2].x + EPSILON);
+    double slopeABMidperpendicular = -1 / (slopeAB + EPSILON);
+    double slopeACMidperpendicular = -1 / (slopeAC + EPSILON);
+
+    // the way of getting center location. ref: https://github.com/obviousjim/ofxDelaunay/blob/master/libs/Delaunay/src/Delaunay.cpp
+    double centerX = -1 * (middleAB[0] * slopeABMidperpendicular - middleAC[0] * slopeACMidperpendicular + middleAC[1] -
+                      middleAB[1]) / (slopeABMidperpendicular - slopeACMidperpendicular);
+    double centerY = -1 * (slopeABMidperpendicular * (centerX - middleAB[0]) + middleAB[1]);
+
+    double centerCircle[] = {centerX, centerY};
+    auto distance = [](double *centerCircle, XYZ point) -> double {
+        double distanceSquare = pow(centerCircle[0] - point.x, 2) + pow(centerCircle[1] - point.y, 2);
+        return sqrt(distanceSquare);
+    };
+
+    // output part
+    double redius = distance(centerCircle, triangle[0]);
+    double distanceBetweenCenterAndSample = distance(centerCircle, point);
+    if (redius > distanceBetweenCenterAndSample)
+        return StateOfPoint::inside;
+    if (redius < distanceBetweenCenterAndSample)
+        return StateOfPoint::outside;
+    return StateOfPoint::onTheCircle;
 }

@@ -13,6 +13,12 @@ struct XYZ {
     double x, y, z;
 };
 
+enum StateOfPoint {
+    outside, inside, onTheCircle
+};
+
+StateOfPoint isInsideTheTriangle(XYZ point, std::vector<XYZ> triangle);
+
 class Triangulation {
 public:
     Triangulation(std::vector<double> samplePointX, std::vector<double> samplePointY, std::vector<double> samplePointZ);
