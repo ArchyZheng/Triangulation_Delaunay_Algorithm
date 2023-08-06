@@ -18,14 +18,14 @@ TEST(TriangulationSuit, Construction) {
 }
 
 TEST(TriangulationSuit, isInsideTheTriangle) {
-    std::vector<XYZ> triangle = {{0, 0, 0},
-                                 {0, 3, 0},
-                                 {4, 0, 0}};
-    XYZ point = {2, 1.5, 0};
+    std::vector<XYZ> triangle = {{"point1", 0, 0, 0},
+                                 {"point2", 0, 3, 0},
+                                 {"point3", 4, 0, 0}};
+    XYZ point = {"samplePoint", 2, 1.5, 0};
     ASSERT_EQ(isInsideTheTriangle(point = point, triangle = triangle), StateOfPoint::inside);
-    point = {0, 0, 0};
+    point = {"samplePoint", 0, 0, 0};
     ASSERT_EQ(isInsideTheTriangle(point, triangle), StateOfPoint::onTheCircle);
-    point = {100, 100, 0};
+    point = {"samplePoint", 100, 100, 0};
     ASSERT_EQ(isInsideTheTriangle(point, triangle), StateOfPoint::outside);
 }
 
@@ -39,4 +39,5 @@ TEST(TriangulationSuit, loadData) {
     readFromBinaryFile(sampleXPath, &sampleXVector);
     readFromBinaryFile(sampleYPath, &sampleYVector);
     readFromBinaryFile(sampleZPath, &sampleZVector);
+    Triangulation triangulation(sampleXVector, sampleYVector, sampleZVector);
 }

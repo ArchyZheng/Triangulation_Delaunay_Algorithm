@@ -9,28 +9,41 @@
 #include <map>
 #include <string>
 #include <fstream>
+#include <set>
 
 struct XYZ {
+    std::string id; // the index of point according _samplePoints
     double x, y, z;
+};
+
+struct Triangle {
+    std::set<std::string> id; // the index set of the points
+    std::vector<XYZ> trianglePoints; // #trianglePoints = 3
 };
 
 enum StateOfPoint {
     outside, inside, onTheCircle
 };
 
-StateOfPoint isInsideTheTriangle(XYZ point, std::vector<XYZ> triangle);
+StateOfPoint isInsideTheTriangle(const XYZ &point, std::vector<XYZ> triangle);
 
-void readFromBinaryFile(const std::string& fileStream, std::vector<double> *storedVector);
+void readFromBinaryFile(const std::string &fileStream, std::vector<double> *storedVector);
 
+/*
+ * triangulation by Delaunay algorithm, ref: https://www.ics.uci.edu/~goodrich/teach/geom/notes/DT.pdf page:15
+ */
 class Triangulation {
 public:
     Triangulation(std::vector<double> samplePointX, std::vector<double> samplePointY, std::vector<double> samplePointZ);
 
+    static std::vector<Triangle> splitOneTriangleIntoThreeStateInside(const XYZ &point, Triangle triangle);
+
+    void splitOneTriangleIntoThreeStateOnTheCircle(XYZ point, Triangle triangle);
 
 private:
     std::vector<XYZ> _samplePoints;
-    std::map<std::string, std::vector<XYZ>> _triangleCandidate;
-    std::vector<XYZ> _superTriangle;
+    std::vector<Triangle> _triangleCandidate;
+    Triangle _superTriangle;
 };
 
 
