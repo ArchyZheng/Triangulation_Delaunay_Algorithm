@@ -41,3 +41,69 @@ TEST(TriangulationSuit, loadData) {
     readFromBinaryFile(sampleZPath, &sampleZVector);
     Triangulation triangulation(sampleXVector, sampleYVector, sampleZVector);
 }
+
+TEST(TriangulationSuit, splitSateInsideTriangleOnePoint) {
+    XYZ point = {"samplePoint", 2, 1.5, 0};
+    std::vector<double> samplePointX = {point.x};
+    std::vector<double> samplePointY = {point.y};
+    std::vector<double> samplePointZ = {point.z};
+    Triangulation triangulation(samplePointX, samplePointY, samplePointZ);
+    std::cout << "hello world!" << std::endl;
+}
+
+TEST(TriangulationSuit, splitSateInsideTriangleThreePoints) {
+    XYZ point1 = {"samplePoint", 1, 0, 0};
+    XYZ point2 = {"samplePoint", 0, 0, 0};
+    XYZ point3 = {"samplePoint", 0, 1, 0};
+    std::vector<double> samplePointX = {point1.x, point2.x, point3.x};
+    std::vector<double> samplePointY = {point1.y, point2.y, point3.y};
+    std::vector<double> samplePointZ = {point1.z, point2.z, point3.z};
+    Triangulation triangulation(samplePointX, samplePointY, samplePointZ);
+    std::cout << "hello world!" << std::endl;
+}
+
+TEST(TriangulationSuit, splitSateInsideTriangleFourPoints) {
+    XYZ point1 = {"samplePoint", 1, 0, 0};
+    XYZ point2 = {"samplePoint", 0, 0, 0};
+    XYZ point3 = {"samplePoint", 0, 1, 0};
+    XYZ point4 = {"samplePoint", 1, 1, 0};
+    std::vector<double> samplePointX = {point1.x, point2.x, point3.x, point4.x};
+    std::vector<double> samplePointY = {point1.y, point2.y, point3.y, point4.y};
+    std::vector<double> samplePointZ = {point1.z, point2.z, point3.z, point4.z};
+    Triangulation triangulation(samplePointX, samplePointY, samplePointZ);
+    std::cout << "hello world!" << std::endl;
+}
+
+
+TEST(TriangulationSuit, splitSateInsideTriangleFivePoints) {
+    XYZ point1 = {"samplePoint", 1, 0, 0};
+    XYZ point2 = {"samplePoint", 0, 0, 0};
+    XYZ point3 = {"samplePoint", 0, 1, 0};
+    XYZ point4 = {"samplePoint", 1, 1, 0};
+    XYZ point5 = {"samplePoint", .5, -0.5, 0};
+    std::vector<double> samplePointX = {point1.x, point2.x, point3.x, point4.x, point5.x};
+    std::vector<double> samplePointY = {point1.y, point2.y, point3.y, point4.y, point5.y};
+    std::vector<double> samplePointZ = {point1.z, point2.z, point3.z, point4.z, point5.z};
+    Triangulation triangulation(samplePointX, samplePointY, samplePointZ);
+    std::cout << "hello world!" << std::endl;
+}
+
+TEST(TriangulationSuit, checkCross) {
+    XYZ point1 = {"samplePoint", 1, 0, 0};
+    XYZ point2 = {"samplePoint", 0, 0, 0};
+    XYZ point3 = {"samplePoint", .5, -1, 0};
+    XYZ point4 = {"samplePoint", .5, 1, 0};
+    XYZ lineOne[] = {point1, point2};
+    XYZ lineTwo[] = {point3, point4};
+    bool result = checkCross(lineOne, lineTwo);
+    ASSERT_EQ(result, true);
+    point1 = {"samplePoint", 1, 0, 0};
+    point2 = {"samplePoint", 0, 0, 0};
+    point3 = {"samplePoint", .5, -1, 0};
+    point4 = {"samplePoint", 1, -1, 0};
+    XYZ lineThree[] = {point1, point2};
+    XYZ lineFour[] = {point3, point4};
+    result = checkCross(lineThree, lineFour);
+    ASSERT_EQ(result, false);
+
+}

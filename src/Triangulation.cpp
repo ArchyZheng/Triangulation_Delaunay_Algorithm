@@ -38,24 +38,57 @@ Triangulation::Triangulation(std::vector<double> samplePointX, std::vector<doubl
     // repeat: select one point looking for triangle whose circumcircle contain this point
     // break those triangles and connect its edges to our point to make a new set of triangles.
     for (const auto &samplePoint: this->_samplePoints) {
-        std::vector<Triangle> pointOnTheCircle; // the map will store triangles
-        std::vector<Triangle> pointInsideTheCircle;
-        for (const auto &triangle: this->_triangleCandidate) {
+        std::vector<Triangle *> pointOnTheCircle; // the map will store triangles
+        std::vector<Triangle *> pointInsideTheCircle;
+        for (auto &triangle: this->_triangleCandidate) {
+            if (!triangle.available)
+                continue;
             StateOfPoint pointState = isInsideTheTriangle(samplePoint, triangle.trianglePoints);
             if (pointState == StateOfPoint::onTheCircle) {
-                pointOnTheCircle.push_back(triangle);
+                pointOnTheCircle.push_back(&triangle);
             } else if (pointState == StateOfPoint::inside) {
-                pointInsideTheCircle.push_back(triangle);
+                pointInsideTheCircle.push_back(&triangle);
             }
         }
         for (auto triangle: pointOnTheCircle) {
 
         }
-        for (const auto &triangle: pointInsideTheCircle) {
-            splitOneTriangleIntoThreeStateInside(samplePoint, triangle);
+        for (auto triangle: pointInsideTheCircle) {
+            std::vector<Triangle> reconnectedTriangle = splitOneTriangleIntoThreeStateInside(samplePoint, *triangle);
+            for (const auto &newTriangle: reconnectedTriangle) {
+                this->_triangleCandidate.push_back(newTriangle);
+            }
+            triangle->available = false;
         }
     }
     // delete all super-triangle vertices
+    std::list<Triangle> output;
+    for (auto triangle: this->_triangleCandidate) {
+        if (!triangle.available) {
+            continue;
+        }
+        if (checkTriangleContainSuperTriangleVertex(triangle)) {
+            continue;
+        }
+        output.push_back(triangle);
+    }
+    this->_triangleCandidate = output;
+}
+
+/*
+ * this function is for clearing up the triangle vector
+ * @return ture if this triangle contain superTriangleVertex. else return false
+ */
+bool checkTriangleContainSuperTriangleVertex(const Triangle &triangle) {
+    std::vector<std::string> superTrianglePoints = {"superTrianglePoint1", "superTrianglePoint2",
+                                                    "superTrianglePoint3"};
+    for (const auto &superTrianglePoint: superTrianglePoints) {
+        if (triangle.id.count(superTrianglePoint)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /*
@@ -76,7 +109,15 @@ std::vector<Triangle> Triangulation::splitOneTriangleIntoThreeStateInside(const 
         std::vector<XYZ> pointVector = {point, triangle.trianglePoints[subArrangement[0]],
                                         triangle.trianglePoints[subArrangement[1]]};
         Triangle newTriangle = {idSet, pointVector};
-        triangleVectorOutput.push_back(newTriangle);
+        bool thisIsANewTriangle = true;
+        for (const auto &triangle: this->_triangleCandidate) {
+            if (triangle.id == newTriangle.id) {
+                thisIsANewTriangle = false;
+            }
+        }
+        if (thisIsANewTriangle) {
+            triangleVectorOutput.push_back(newTriangle);
+        }
     }
     return triangleVectorOutput;
 }
@@ -138,4 +179,26 @@ void readFromBinaryFile(const std::string &filePath, std::vector<double> *stored
 
     storedVector->resize(fileSize / sizeof(double));
     fileStream.read(reinterpret_cast<char *>(storedVector->data()), fileSize);
+}
+
+/*
+ * this function will check whether two line segmentation cross.
+ * ref https://www.cnblogs.com/tuyang1129/p/9390376.html
+ * @return ture if cross, else return false
+ */
+bool checkCross(XYZ *lineSegments1, XYZ *lineSegments2) {
+    double vector1[2] = {lineSegments1[0].x - lineSegments1[1].x, lineSegments1[0].y - lineSegments1[1].y};
+    double vector2[2] = {lineSegments2[0].x - lineSegments2[1].x, lineSegments2[0].y - lineSegments2[1].y};
+
+    double vector1_1[2] = {lineSegments2[0].x - lineSegments1[0].x, lineSegments2[0].y - lineSegments1[0].y};
+    double vector1_2[2] = {lineSegments2[1].x - lineSegments1[0].x, lineSegments2[1].y - lineSegments1[0].y};
+
+    double vector2_1[2] = {lineSegments1[0].x - lineSegments2[0].x, lineSegments1[0].y - lineSegments2[0].y};
+    double vector2_2[2] = {lineSegments1[1].x - lineSegments2[0].x, lineSegments1[1].y - lineSegments2[0].y};
+
+    bool isTwoSideForFirstLine = (vector1[0] * vector1_1[1] + vector1[1] * vector1_1[0]) *
+                                 (vector1[0] * vector1_2[1] + vector1[1] * vector1_2[0]) < 0;
+    bool isTwoSideForSecondLine = (vector2[0] * vector2_1[1] + vector2[1] * vector2_1[0]) *
+                                  (vector2[0] * vector2_2[1] + vector2[1] * vector2_2[0]) < 0;
+    return isTwoSideForFirstLine && isTwoSideForSecondLine;
 }
