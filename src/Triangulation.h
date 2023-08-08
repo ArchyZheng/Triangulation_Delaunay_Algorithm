@@ -35,6 +35,9 @@ void readFromBinaryFile(const std::string &fileStream, std::vector<double> *stor
 
 bool checkCross(XYZ *lineSegments1, XYZ *lineSegments2);
 
+double getAngle(XYZ *vector1, XYZ *vector2);
+
+
 /*
  * triangulation by Delaunay algorithm, ref: https://www.ics.uci.edu/~goodrich/teach/geom/notes/DT.pdf page:15
  */
@@ -43,7 +46,9 @@ public:
     Triangulation(std::vector<double> samplePointX, std::vector<double> samplePointY,
                   std::vector<double> samplePointZ);
 
-    std::vector<Triangle> splitOneTriangleIntoThreeStateInside(const XYZ &point, Triangle triangle);
+    std::vector<Triangle> splitOneTriangleIntoThreeStateInside(const XYZ &point, std::vector<Triangle *> triangles);
+
+    bool isTriangleCandidateContain(const Triangle& triangle);
 
     void splitOneTriangleIntoThreeStateOnTheCircle(XYZ point, Triangle triangle);
 

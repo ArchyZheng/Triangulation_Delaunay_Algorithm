@@ -50,20 +50,15 @@ Triangulation::Triangulation(std::vector<double> samplePointX, std::vector<doubl
                 pointInsideTheCircle.push_back(&triangle);
             }
         }
-        for (auto triangle: pointOnTheCircle) {
-
-        }
-        for (auto triangle: pointInsideTheCircle) {
-            std::vector<Triangle> reconnectedTriangle = splitOneTriangleIntoThreeStateInside(samplePoint, *triangle);
-            for (const auto &newTriangle: reconnectedTriangle) {
-                this->_triangleCandidate.push_back(newTriangle);
-            }
-            triangle->available = false;
+        std::vector<Triangle> addedTriangle = splitOneTriangleIntoThreeStateInside(samplePoint,
+                                                                                   pointInsideTheCircle);
+        for (const auto &triangle: addedTriangle) {
+            this->_triangleCandidate.push_back(triangle);
         }
     }
     // delete all super-triangle vertices
     std::list<Triangle> output;
-    for (auto triangle: this->_triangleCandidate) {
+    for (const auto &triangle: this->_triangleCandidate) {
         if (!triangle.available) {
             continue;
         }
@@ -92,34 +87,65 @@ bool checkTriangleContainSuperTriangleVertex(const Triangle &triangle) {
 }
 
 /*
- * for the situation that the point is insider the triangle
- * splitting the triangle into three triangle by connect the point as the vertex of each triangle.
+ * Bowyer Watson algorithm ref: https://www.youtube.com/watch?v=4ySSsESzw2Y&t=256s.
+ * point will connect each point of triangle, to create new triangles.
  * @parameter point: sample point
- * @parameter triangle: the point is inside the triangle
+ * @parameter trianglesContainThePoint: triangles contain the point
  * @return triangleVector: the output vector which contain three triangles
  */
-std::vector<Triangle> Triangulation::splitOneTriangleIntoThreeStateInside(const XYZ &point, Triangle triangle) {
-    std::vector<Triangle> triangleVectorOutput;
-    int arrangement[3][2] = {{0, 1},
-                             {0, 2},
-                             {1, 2}};
-    for (auto subArrangement: arrangement) {
-        std::set < std::string > idSet = {point.id, triangle.trianglePoints[subArrangement[0]].id,
-                                          triangle.trianglePoints[subArrangement[1]].id};
-        std::vector<XYZ> pointVector = {point, triangle.trianglePoints[subArrangement[0]],
-                                        triangle.trianglePoints[subArrangement[1]]};
-        Triangle newTriangle = {idSet, pointVector};
-        bool thisIsANewTriangle = true;
-        for (const auto &triangle: this->_triangleCandidate) {
-            if (triangle.id == newTriangle.id) {
-                thisIsANewTriangle = false;
+std::vector<Triangle>
+Triangulation::splitOneTriangleIntoThreeStateInside(const XYZ &point,
+                                                    std::vector<Triangle *> trianglesContainThePoint) {
+    std::vector<std::pair<XYZ, double>> angleBetweenPointAndTrianglePoints;
+
+    XYZ standardVector[] = {{"base", 1, 0, 0},
+                            {"base", 0, 0, 0}}; // for compute the angle of each segmentation.
+    std::set < std::string > attendPoint;
+    for (auto &triangle: trianglesContainThePoint) {
+        // make each triangle in the vector as bad triangle
+        triangle->available = false;
+
+        // get each angle, and sort it
+        for (const auto &trianglePoint: triangle->trianglePoints) {
+            XYZ vector[] = {point, trianglePoint};
+            double angle = getAngle(vector, standardVector);
+            std::string temp = trianglePoint.id;
+            if (attendPoint.count(temp)) {
+                continue;
             }
+            attendPoint.insert(temp);
+            auto storedAngle = std::make_pair(trianglePoint, angle);
+            angleBetweenPointAndTrianglePoints.push_back(storedAngle);
         }
-        if (thisIsANewTriangle) {
-            triangleVectorOutput.push_back(newTriangle);
+        std::sort(angleBetweenPointAndTrianglePoints.begin(), angleBetweenPointAndTrianglePoints.end(),
+                  [](const auto &a, const auto &b) {
+                      return a.second > b.second;
+                  });
+    }
+    // point connects each point in the triangles
+    angleBetweenPointAndTrianglePoints.push_back(
+            angleBetweenPointAndTrianglePoints[0]); // connect the final triangle of the circle
+    std::vector<Triangle> outputTriangle;
+    for (int i = 0; i < angleBetweenPointAndTrianglePoints.size() - 1; i++) {
+        // reassign the triangle list
+        std::set < std::string > triangleId = {point.id, angleBetweenPointAndTrianglePoints[i].first.id,
+                                               angleBetweenPointAndTrianglePoints[i + 1].first.id};
+        std::vector<XYZ> trianglePoints = {point, angleBetweenPointAndTrianglePoints[i].first,
+                                           angleBetweenPointAndTrianglePoints[i + 1].first};
+        Triangle newTriangle = {triangleId, trianglePoints, true};
+        outputTriangle.push_back(newTriangle);
+    }
+    return outputTriangle;
+}
+
+
+bool Triangulation::isTriangleCandidateContain(const Triangle &triangle) {
+    for (const auto &triangleFromCandidate: this->_triangleCandidate) {
+        if (triangleFromCandidate.id == triangle.id) {
+            return true;
         }
     }
-    return triangleVectorOutput;
+    return false;
 }
 
 /*
@@ -196,9 +222,31 @@ bool checkCross(XYZ *lineSegments1, XYZ *lineSegments2) {
     double vector2_1[2] = {lineSegments1[0].x - lineSegments2[0].x, lineSegments1[0].y - lineSegments2[0].y};
     double vector2_2[2] = {lineSegments1[1].x - lineSegments2[0].x, lineSegments1[1].y - lineSegments2[0].y};
 
-    bool isTwoSideForFirstLine = (vector1[0] * vector1_1[1] + vector1[1] * vector1_1[0]) *
-                                 (vector1[0] * vector1_2[1] + vector1[1] * vector1_2[0]) < 0;
-    bool isTwoSideForSecondLine = (vector2[0] * vector2_1[1] + vector2[1] * vector2_1[0]) *
-                                  (vector2[0] * vector2_2[1] + vector2[1] * vector2_2[0]) < 0;
+    bool isTwoSideForFirstLine = (vector1[0] * vector1_1[1] - vector1[1] * vector1_1[0]) *
+                                 (vector1[0] * vector1_2[1] - vector1[1] * vector1_2[0]) < 0;
+    bool isTwoSideForSecondLine = (vector2[0] * vector2_1[1] - vector2[1] * vector2_1[0]) *
+                                  (vector2[0] * vector2_2[1] - vector2[1] * vector2_2[0]) < 0;
     return isTwoSideForFirstLine && isTwoSideForSecondLine;
+}
+
+/*
+ * as the function name.
+ * @parameter vector1
+ * @parameter vector2
+ */
+double getAngle(XYZ *vector1, XYZ *vector2) {
+    double lineSegmentation1[] = {vector1[0].x - vector1[1].x, vector1[0].y - vector1[1].y};
+    double lineSegmentation2[] = {vector2[0].x - vector2[1].x, vector2[0].y - vector2[1].y};
+
+    double innerProduct = lineSegmentation1[0] * lineSegmentation2[0] + lineSegmentation1[1] * lineSegmentation2[1];
+
+    double length1 = std::sqrt(pow(lineSegmentation1[0], 2.0) + pow(lineSegmentation1[1], 2.0));
+    double length2 = std::sqrt(pow(lineSegmentation2[0], 2.0) + pow(lineSegmentation2[1], 2.0));
+
+//    double direction = lineSegmentation1[0] * lineSegmentation2[1] - lineSegmentation1[1] * lineSegmentation2[0];
+//    float rho = 1;
+//    if (direction < 0)
+//        rho = -1;
+
+    return acos(innerProduct / (length1 * length2));
 }

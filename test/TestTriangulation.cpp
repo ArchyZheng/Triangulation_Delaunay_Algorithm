@@ -74,13 +74,12 @@ TEST(TriangulationSuit, splitSateInsideTriangleFourPoints) {
     std::cout << "hello world!" << std::endl;
 }
 
-
 TEST(TriangulationSuit, splitSateInsideTriangleFivePoints) {
     XYZ point1 = {"samplePoint", 1, 0, 0};
     XYZ point2 = {"samplePoint", 0, 0, 0};
     XYZ point3 = {"samplePoint", 0, 1, 0};
     XYZ point4 = {"samplePoint", 1, 1, 0};
-    XYZ point5 = {"samplePoint", .5, -0.5, 0};
+    XYZ point5 = {"samplePoint", 0.2, 0.5, 0};
     std::vector<double> samplePointX = {point1.x, point2.x, point3.x, point4.x, point5.x};
     std::vector<double> samplePointY = {point1.y, point2.y, point3.y, point4.y, point5.y};
     std::vector<double> samplePointZ = {point1.z, point2.z, point3.z, point4.z, point5.z};
@@ -88,11 +87,25 @@ TEST(TriangulationSuit, splitSateInsideTriangleFivePoints) {
     std::cout << "hello world!" << std::endl;
 }
 
-TEST(TriangulationSuit, checkCross) {
+TEST(TriangulationSuit, splitSateInsideTriangleSixPoints) {
     XYZ point1 = {"samplePoint", 1, 0, 0};
     XYZ point2 = {"samplePoint", 0, 0, 0};
-    XYZ point3 = {"samplePoint", .5, -1, 0};
-    XYZ point4 = {"samplePoint", .5, 1, 0};
+    XYZ point3 = {"samplePoint", 0, 1, 0};
+    XYZ point4 = {"samplePoint", 1, 1, 0};
+    XYZ point5 = {"samplePoint", 0.2, 0.5, 0};
+    XYZ point6 = {"samplePoint", 0.1, 0.6, 0};
+    std::vector<double> samplePointX = {point1.x, point2.x, point3.x, point4.x, point5.x, point6.x};
+    std::vector<double> samplePointY = {point1.y, point2.y, point3.y, point4.y, point5.y, point6.y};
+    std::vector<double> samplePointZ = {point1.z, point2.z, point3.z, point4.z, point5.z, point6.z};
+    Triangulation triangulation(samplePointX, samplePointY, samplePointZ);
+    std::cout << "hello world!" << std::endl;
+}
+
+TEST(TriangulationSuit, checkCross) {
+    XYZ point1 = {"samplePoint", 1, 1, 0};
+    XYZ point2 = {"samplePoint", 0.2, 0.5, 0};
+    XYZ point3 = {"samplePoint", 0, 1, 0};
+    XYZ point4 = {"samplePoint", 1, 0, 0};
     XYZ lineOne[] = {point1, point2};
     XYZ lineTwo[] = {point3, point4};
     bool result = checkCross(lineOne, lineTwo);
@@ -104,6 +117,14 @@ TEST(TriangulationSuit, checkCross) {
     XYZ lineThree[] = {point1, point2};
     XYZ lineFour[] = {point3, point4};
     result = checkCross(lineThree, lineFour);
+    ASSERT_EQ(result, false);
+    point1 = {"samplePoint", 1, 0, 0};
+    point2 = {"samplePoint", 0, 0, 0};
+    point3 = {"samplePoint", 1, 0, 0};
+    point4 = {"samplePoint", 0, 0, 0};
+    XYZ lineFive[] = {point1, point2};
+    XYZ lineSix[] = {point3, point4};
+    result = checkCross(lineFive, lineSix);
     ASSERT_EQ(result, false);
 
 }
